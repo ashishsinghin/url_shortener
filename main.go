@@ -7,22 +7,33 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-)
-
-const (
-	dbUser     = "postgres"
-	dbPassword = "password"
-	dbName     = "url_shortener"
-	port       = "8080"
 )
 
 var db *sql.DB
 var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 
+func Loadenv() (dbUser, dbPassword, dbName, port string) {
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	// Retrieve database credentials from environment variables
+	dbUser = os.Getenv("DB_USER")
+	dbPassword = os.Getenv("DB_PASSWORD")
+	dbName = os.Getenv("DB_NAME")
+	port = os.Getenv("PORT")
+	return
+}
+
 func init() {
+	dbUser, dbPassword, dbName, _ := Loadenv()
 	var err error
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", dbUser, dbPassword, dbName)
 	db, err = sql.Open("postgres", connStr)
@@ -61,7 +72,7 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 		log.Println("Error inserting into database:", err)
 		return
 	}
-
+	_, _, _, port := Loadenv()
 	response := map[string]string{"short_url": fmt.Sprintf("http://localhost:%s/%s", port, shortKey)}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
@@ -80,6 +91,7 @@ func redirectToOriginalURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	_, _, _, port := Loadenv()
 	http.HandleFunc("/shorten", createShortURL)
 	http.HandleFunc("/", redirectToOriginalURL)
 	log.Printf("Server starting on port %s...", port)
