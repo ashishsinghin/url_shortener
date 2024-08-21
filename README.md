@@ -39,6 +39,8 @@ edit your db `username` and `password` in `.env` file
 
 Replace {short_key} with the short key you received in the response.
 
+## Deployment
+
 It's hosted on AWS EC2 instance with public Ip `13.200.237.89`
 
 You can test application using below link
